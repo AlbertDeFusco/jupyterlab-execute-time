@@ -61,7 +61,6 @@ export default class ExecuteTimeWidget extends Widget {
       })
       .done.then(async (msg) => {
         const content = msg.content as KernelMessage.IReplyErrorContent;
-        console.log(content.evalue);
         const rss_value = JSON.parse(content.evalue)['rss'];
         return rss_value;
       });
