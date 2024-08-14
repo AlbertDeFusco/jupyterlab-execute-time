@@ -195,10 +195,8 @@ export default class ExecuteTimeWidget extends Widget {
     if (session) {
       const kernel = session.kernel;
       if (kernel) {
-        console.log(kernel.status);
         if (kernel.status === 'unknown') {
           this.last_rss_value = 0;
-          console.log('reset memory');
         }
       }
     }
