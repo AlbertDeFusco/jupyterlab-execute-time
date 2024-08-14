@@ -11,6 +11,7 @@ import { Cell, CodeCell, ICellModel } from '@jupyterlab/cells';
 import { getTimeDiff, getTimeString, validateDateFormat } from './formatters';
 import { differenceInMilliseconds } from 'date-fns';
 import { showErrorMessage } from '@jupyterlab/apputils';
+import { KernelMessage } from '@jupyterlab/services';
 
 export const PLUGIN_NAME = 'jupyterlab-execute-time';
 const EXECUTE_TIME_CLASS = 'execute-time';
@@ -36,6 +37,7 @@ export interface IExecuteTimeSettings {
 }
 
 export default class ExecuteTimeWidget extends Widget {
+  last_rss_value;
   constructor(
     panel: NotebookPanel,
     tracker: INotebookTracker,
@@ -44,11 +46,25 @@ export default class ExecuteTimeWidget extends Widget {
     super();
     this._panel = panel;
     this._tracker = tracker;
+    this.last_rss_value = 0;
 
     this.updateConnectedCell = this.updateConnectedCell.bind(this);
 
     this._updateSettings(settings);
     settings.changed.connect(this._updateSettings.bind(this));
+  }
+
+  async totalMemory() {
+    return await this._panel.sessionContext
+      .session!.kernel!.requestExecute({
+        code: "import os, subprocess, json; rss = int(subprocess.run(f'ps -p {os.getpid()} -o rss', shell=True, capture_output=True).stdout.decode().strip().splitlines()[-1]) / 1024; raise RuntimeError(json.dumps({'rss': rss}))"
+      })
+      .done.then(async (msg) => {
+        const content = msg.content as KernelMessage.IReplyErrorContent;
+        console.log(content.evalue);
+        const rss_value = JSON.parse(content.evalue)['rss'];
+        return rss_value;
+      });
   }
 
   /**
@@ -302,6 +318,10 @@ export default class ExecuteTimeWidget extends Widget {
             msg += ` at ${getTimeString(endTime, this._settings.dateFormat)}`;
           }
           msg += ` in ${executionTime}`;
+          const rss = await this.totalMemory();
+          const diff = rss - this.last_rss_value;
+          msg += `; total memory: ${rss} MB; diff ${diff} MB`;
+          this.last_rss_value = rss;
 
           const numberOfOutputs = cell.model.outputs.length;
           if (this._settings.showOutputsPerSecond && numberOfOutputs > 0) {
