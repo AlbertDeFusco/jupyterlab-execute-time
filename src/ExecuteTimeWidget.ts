@@ -54,16 +54,25 @@ export default class ExecuteTimeWidget extends Widget {
     settings.changed.connect(this._updateSettings.bind(this));
   }
 
+  /**
+   * Total memory in the running kernel
+   */
   async totalMemory() {
-    return await this._panel.sessionContext
-      .session!.kernel!.requestExecute({
-        code: "import os, subprocess, json; rss = int(subprocess.run(f'ps -p {os.getpid()} -o rss', shell=True, capture_output=True).stdout.decode().strip().splitlines()[-1]) / 1024; raise RuntimeError(json.dumps({'rss': rss}))"
-      })
-      .done.then(async (msg) => {
-        const content = msg.content as KernelMessage.IReplyErrorContent;
-        const rss_value = JSON.parse(content.evalue)['rss'];
-        return rss_value;
-      });
+    const session = this._panel.sessionContext.session;
+    if (session) {
+      const kernel = session.kernel;
+      if (kernel) {
+        return kernel
+          .requestExecute({
+            code: "import os, subprocess, json; rss = int(subprocess.run(f'ps -p {os.getpid()} -o rss', shell=True, capture_output=True).stdout.decode().strip().splitlines()[-1]) / 1024; raise RuntimeError(json.dumps({'rss': rss}))",
+          })
+          .done.then(async (msg) => {
+            const content = msg.content as KernelMessage.IReplyErrorContent;
+            const rss_value = JSON.parse(content.evalue)['rss'];
+            return rss_value;
+          });
+      }
+    }
   }
 
   /**
@@ -182,6 +191,17 @@ export default class ExecuteTimeWidget extends Widget {
    * @private
    */
   async _updateCodeCell(cell: CodeCell, disableHighlight: boolean) {
+    const session = this._panel.sessionContext.session;
+    if (session) {
+      const kernel = session.kernel;
+      if (kernel) {
+        console.log(kernel.status);
+        if (kernel.status === 'unknown') {
+          this.last_rss_value = 0;
+          console.log('reset memory');
+        }
+      }
+    }
     // First update and store current update number.
     const updateNumber = this._increaseUpdateCounter(cell);
     // Cells don't have inputArea attributes until they are ready; wait for this.
