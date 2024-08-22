@@ -1,5 +1,6 @@
 # %%
 
+from copy import deepcopy
 import json
 import psutil
 from IPython.core.getipython import get_ipython
@@ -48,6 +49,9 @@ class MiniProf:
         profile = self.profiler.output(renderer=JSONRenderer(show_all=False))
 
         profile = json.loads(profile)
+        # trim first two children
+        root_frame = deepcopy(profile["root_frame"])
+        profile["root_frame"] = root_frame["children"][0]["children"][0]
 
         end_memory = psutil.Process().memory_info().rss
         start_memory = self.memory_usage.pop(cell_id, 0)
