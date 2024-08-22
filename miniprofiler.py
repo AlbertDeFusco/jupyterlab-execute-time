@@ -6,6 +6,7 @@ from IPython.core.interactiveshell import ExecutionInfo, ExecutionResult, Intera
 from IPython.display import JSON, display
 from pyinstrument import Profiler
 from pyinstrument.renderers.jsonrenderer import JSONRenderer
+from IPython.core.magic import register_cell_magic
 
 class MiniProf:
     ip: InteractiveShell
@@ -50,7 +51,7 @@ class MiniProf:
         start_memory = self.memory_usage.pop(cell_id, 0)
         memory_diff = end_memory - start_memory
 
-        profile['memory_usage'] = memory_diff
+        profile['memory_usage'] = memory_diff / 1024 / 1024
 
         # For demonstration, here's the raw JSON profiling and memory usage
         display(JSON(profile))
@@ -72,6 +73,10 @@ def load_ipython_extension(ipython):
     profiler.register(ipython)
     ipython.user_ns["mini_prof"] = profiler
 
-
 # For interactive testing in the notebook
-load_ipython_extension(get_ipython())
+# load_ipython_extension(get_ipython())
+
+
+# @register_cell_magic
+# def profile(line, cell):
+#     load_ipython_extension(get_ipython())
