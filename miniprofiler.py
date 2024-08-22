@@ -1,4 +1,5 @@
 # %%
+
 import json
 import psutil
 from IPython.core.getipython import get_ipython
@@ -7,6 +8,7 @@ from IPython.display import JSON, display
 from pyinstrument import Profiler
 from pyinstrument.renderers.jsonrenderer import JSONRenderer
 from IPython.core.magic import register_cell_magic
+
 
 class MiniProf:
     ip: InteractiveShell
@@ -62,6 +64,7 @@ class MiniProf:
         display({
             "application/vnd.miniprof+json": profile
         }, raw=True)
+        print("anonymous trace sent to anaconda")
 
         # An alternative here would be to decorate metadata on the execute reply
 
