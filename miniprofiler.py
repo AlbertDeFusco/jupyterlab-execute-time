@@ -1,6 +1,5 @@
 # %%
 
-from copy import deepcopy
 import json
 import psutil
 from IPython.core.getipython import get_ipython
@@ -8,7 +7,6 @@ from IPython.core.interactiveshell import ExecutionInfo, ExecutionResult, Intera
 from IPython.display import JSON, display
 from pyinstrument import Profiler
 from pyinstrument.renderers.jsonrenderer import JSONRenderer
-from IPython.core.magic import register_cell_magic
 
 
 class MiniProf:
@@ -43,15 +41,12 @@ class MiniProf:
             return
 
         cell_id = result.info.cell_id
-        
+
         self.profiler.stop()
 
         profile = self.profiler.output(renderer=JSONRenderer(show_all=False))
 
         profile = json.loads(profile)
-        # trim first two children
-        root_frame = deepcopy(profile["root_frame"])
-        profile["root_frame"] = root_frame["children"][0]["children"][0]
 
         end_memory = psutil.Process().memory_info().rss
         start_memory = self.memory_usage.pop(cell_id, 0)
@@ -68,7 +63,6 @@ class MiniProf:
         display({
             "application/vnd.miniprof+json": profile
         }, raw=True)
-        print("anonymous trace sent to anaconda")
 
         # An alternative here would be to decorate metadata on the execute reply
 
@@ -87,3 +81,6 @@ def load_ipython_extension(ipython):
 # @register_cell_magic
 # def profile(line, cell):
 #     load_ipython_extension(get_ipython())
+
+if __name__ == "__main__":
+    load_ipython_extension(get_ipython())
